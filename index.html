@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Generator pojmova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  /* Raspored: jedna kolona kao sto za društvene igre — karta sa pojmom u centru,
+     tajmer kao prsten koji se prazni, svaki tim ima svoju boju žetona. */
+  :root {
+    --bg: #e9eef5;
+    --surface: #ffffff;
+    --raised: #f4f7fb;
+    --ink: #17203a;
+    --muted: #5c6882;
+    --line: #d6deea;
+    --accent: #3a3ed6;
+    --accent-ink: #ffffff;
+    --hit: #10a06a;
+    --skip: #e4553d;
+    --gold: #f0b429;
+    --scrim: rgba(15, 21, 38, .5);
+    --shadow: 0 1px 2px rgba(23, 32, 58, .06), 0 8px 24px rgba(23, 32, 58, .08);
+    --t1: #e4553d; --t2: #2f7fe6; --t3: #10a06a; --t4: #9b4fe0; --t5: #e3a21a; --t6: #e0458e;
+
+    --display: "Bricolage Grotesque", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1424; --surface: #172038; --raised: #1d2843; --ink: #eef1f8; --muted: #9aa6c1;
+      --line: #2a3657; --accent: #7d81ff; --accent-ink: #0e1424; --hit: #2fca8b; --skip: #ff7a62;
+      --gold: #ffc94d; --scrim: rgba(4, 7, 15, .65); --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
+      --t1: #ff7a62; --t2: #5aa2ff; --t3: #2fca8b; --t4: #b98bff; --t5: #ffc94d; --t6: #ff6fae;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1424; --surface: #172038; --raised: #1d2843; --ink: #eef1f8; --muted: #9aa6c1;
+    --line: #2a3657; --accent: #7d81ff; --accent-ink: #0e1424; --hit: #2fca8b; --skip: #ff7a62;
+    --gold: #ffc94d; --scrim: rgba(4, 7, 15, .65); --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
+    --t1: #ff7a62; --t2: #5aa2ff; --t3: #2fca8b; --t4: #b98bff; --t5: #ffc94d; --t6: #ff6fae;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    padding-block: 20px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--bg);
+    color: var(--ink);
+    font: 500 16px/1.45 var(--body);
+  }
+  .hidden { display: none !important; }
+  .app { max-width: 460px; width: 100%; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .muted { color: var(--muted); }
+
+  /* Zaglavlje */
+  .znak { display: flex; align-items: center; gap: 10px; margin: 0; font: 800 1.15rem/1 var(--display); letter-spacing: -.01em; }
+  .znak-karte { position: relative; width: 22px; height: 28px; flex: none; }
+  .znak-karte i { position: absolute; inset: 0; border-radius: 4px; border: 2px solid var(--ink); background: var(--surface); }
+  .znak-karte i:first-child { transform: rotate(-12deg) translate(-3px, 1px); border-color: var(--accent); }
+  .znak-karte i:last-child { transform: rotate(6deg) translate(2px, 0); }
+
+  .oznaka { margin: 0; font: 700 .72rem/1 var(--body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+
+  .ploca { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 20px; background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); }
+
+  /* Dugmad */
+  button { font: inherit; cursor: pointer; border: 0; color: inherit; background: none; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .glavno {
+    width: 100%; padding: 16px 20px; border-radius: 16px;
+    font: 800 1.2rem/1 var(--display); letter-spacing: .01em;
+    color: var(--accent-ink); background: var(--accent);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 60%, #000);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .glavno:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 60%, #000); }
+  .tiho {
+    padding: 10px 14px; border-radius: 12px; font-weight: 600; font-size: .92rem;
+    color: var(--ink); background: var(--raised); border: 1px solid var(--line);
+  }
+  .tiho:hover { border-color: var(--muted); }
+  .link { padding: 6px 2px; font-weight: 600; font-size: .88rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+  .link:hover { color: var(--ink); }
+  .red-dugmadi { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+  /* Glavni meni: težina */
+  .naslov-ploce { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .naslov-ploce h2 { margin: 0; font: 800 1.35rem/1.1 var(--display); text-wrap: balance; }
+  .tezina { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tezina button {
+    display: grid; gap: 8px; justify-items: start; padding: 12px; border-radius: 14px; text-align: left;
+    background: var(--raised); border: 2px solid transparent;
+  }
+  .tezina button b { font: 800 1.05rem/1 var(--display); }
+  .tezina button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .tackice { display: flex; gap: 4px; }
+  .tackice span { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--muted); }
+  .tackice span.puna { background: var(--accent); border-color: var(--accent); }
+  .tezina-opis { margin: 0; font-size: .9rem; color: var(--muted); }
+
+  /* Glavni meni: timovi */
+  #lista-timova { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .tim-red { display: flex; align-items: center; gap: 8px; }
+  .boja { width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--tim, var(--t1)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tim, var(--t1)) 25%, transparent); }
+  .tim-red:nth-child(6n+1), .rez:nth-child(6n+1) { --tim: var(--t1); }
+  .tim-red:nth-child(6n+2), .rez:nth-child(6n+2) { --tim: var(--t2); }
+  .tim-red:nth-child(6n+3), .rez:nth-child(6n+3) { --tim: var(--t3); }
+  .tim-red:nth-child(6n+4), .rez:nth-child(6n+4) { --tim: var(--t4); }
+  .tim-red:nth-child(6n+5), .rez:nth-child(6n+5) { --tim: var(--t5); }
+  .tim-red:nth-child(6n+6), .rez:nth-child(6n+6) { --tim: var(--t6); }
+  .tim-red input {
+    font: inherit; color: var(--ink); background: var(--raised);
+    border: 1px solid var(--line); border-radius: 12px;
+  }
+  .tim-red input.ime { flex: 1 1 0; width: 0; min-width: 0; padding: 11px 12px; font-weight: 600; }
+  .stepper { display: flex; align-items: center; flex: none; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
+  .stepper button { width: 30px; height: 42px; font-size: 1.15rem; font-weight: 700; color: var(--muted); }
+  .stepper button:hover { color: var(--ink); }
+  .tim-red .stepper input.poeni {
+    width: 40px; padding: 0; border: 0; background: transparent; text-align: center;
+    font: 800 1.05rem/1 var(--display); font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield;
+  }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .ikona { flex: none; width: 34px; height: 42px; border-radius: 10px; font-size: 1.3rem; color: var(--muted); }
+  .ikona:hover { color: var(--skip); }
+  .podnozje { display: grid; gap: 4px; justify-items: center; text-align: center; }
+  .info-reci { margin: 0; font-size: .85rem; color: var(--muted); }
+
+  /* Igra: ko je na potezu */
+  .potez { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .potez-tim { display: grid; gap: 6px; min-width: 0; }
+  .na-potezu { display: flex; align-items: center; gap: 10px; margin: 0; font: 800 1.45rem/1.1 var(--display); overflow-wrap: anywhere; }
+  .cip {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px;
+    font-size: .8rem; font-weight: 700; color: var(--muted); background: var(--surface); border: 1px solid var(--line);
+  }
+
+  /* Igra: tajmer prsten */
+  .sto { display: grid; justify-items: center; gap: 18px; }
+  .prsten { position: relative; width: 148px; height: 148px; }
+  .prsten svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .prsten circle { fill: none; stroke-width: 10; }
+  .prsten .staza { stroke: var(--line); }
+  .prsten .vreme { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset .2s linear, stroke .3s; }
+  .prsten.malo .vreme { stroke: var(--skip); }
+  .tajmer {
+    position: absolute; inset: 0; display: grid; place-items: center; margin: 0;
+    font: 800 3.1rem/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  }
+  .tajmer.malo { color: var(--skip); animation: puls 1s ease-in-out infinite; }
+  @keyframes puls { 50% { transform: scale(1.08); } }
+  .u-rundi .prsten { width: 108px; height: 108px; }
+  .u-rundi .tajmer { font-size: 2.3rem; }
+
+  /* Igra: karta sa pojmom */
+  .karta-omot { position: relative; width: 100%; max-width: 340px; }
+  .karta-omot::before {
+    content: ""; position: absolute; inset: 0; border-radius: 22px;
+    background: var(--surface); border: 1px solid var(--line); transform: rotate(-3.5deg) translate(-6px, 6px);
+  }
+  .karta {
+    position: relative; display: grid; place-items: center; min-height: 190px; padding: 34px 28px;
+    border-radius: 22px; background: var(--surface); box-shadow: var(--shadow);
+    border: 2px solid color-mix(in srgb, var(--tim, var(--accent)) 55%, var(--line));
+  }
+  .indeks { position: absolute; font: 800 .95rem/1 var(--display); color: var(--tim, var(--accent)); letter-spacing: .04em; }
+  .indeks.gore { top: 14px; left: 16px; }
+  .indeks.dole { bottom: 14px; right: 16px; transform: rotate(180deg); }
+  .pojam {
+    margin: 0; text-align: center; text-wrap: balance; overflow-wrap: anywhere;
+    font: 800 clamp(2rem, 9vw, 2.7rem)/1.1 var(--display); letter-spacing: -.015em;
+  }
+  .pojam.anim { animation: ulaz .28s cubic-bezier(.2, .9, .3, 1.2); }
+  @keyframes ulaz { from { opacity: 0; transform: translateY(14px) rotate(-2deg) scale(.96); } to { opacity: 1; transform: none; } }
+  .pojam.poruka { font: 600 1.1rem/1.4 var(--body); color: var(--muted); }
+  .runda-bodovi {
+    margin: 0; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: .95rem;
+    background: color-mix(in srgb, var(--hit) 14%, var(--surface)); color: var(--ink);
+  }
+  .runda-bodovi strong { font: 800 1.1rem/1 var(--display); color: var(--hit); font-variant-numeric: tabular-nums; }
+
+  .akcije { display: grid; grid-template-columns: 1.35fr 1fr; gap: 10px; width: 100%; }
+  .akcije button {
+    display: grid; gap: 4px; justify-items: center; padding: 16px 10px; border-radius: 18px;
+    font: 800 1.15rem/1 var(--display); letter-spacing: .01em; transition: transform .08s, box-shadow .08s;
+  }
+  .akcije small { font: 700 .75rem/1 var(--body); letter-spacing: .06em; opacity: .85; }
+  .btn-pogodak { color: #fff; background: var(--hit); box-shadow: 0 4px 0 color-mix(in srgb, var(--hit) 60%, #000); }
+  .btn-preskok {
+    color: var(--skip); background: var(--surface);
+    border: 2px solid var(--skip); box-shadow: 0 4px 0 color-mix(in srgb, var(--skip) 35%, transparent);
+  }
+  .akcije button:active { transform: translateY(3px); box-shadow: none; }
+  .kraj-naslov { margin: 0; font: 800 2.6rem/1 var(--display); color: var(--skip); letter-spacing: -.02em; }
+  .kraj-tekst { margin: 10px 0 0; text-align: center; font-weight: 600; color: var(--muted); }
+  .kraj-sadrzaj { display: grid; justify-items: center; }
+  .sto > .glavno, .sto > .red-dugmadi { width: 100%; }
+
+  /* Rezultat */
+  .rezultat ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .rez {
+    display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px;
+    padding: 10px 12px; border-radius: 14px;
+  }
+  .rez.aktivan { background: color-mix(in srgb, var(--tim) 12%, var(--surface)); }
+  .rez-ime { font-weight: 700; overflow-wrap: anywhere; }
+  .rez-ime em { margin-left: 6px; font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .rez-ime .vodi { padding: 2px 6px; border-radius: 6px; color: #3a2a00; background: var(--gold); }
+  .rez .bod { font: 800 1.35rem/1 var(--display); font-variant-numeric: tabular-nums; }
+  .traka { grid-column: 2 / 4; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .traka span { display: block; height: 100%; border-radius: inherit; background: var(--tim); transition: width .4s; }
+
+  /* Prozor potvrde */
+  .pozadina {
+    position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+    background: var(--scrim);
+  }
+  .prozor { width: 100%; max-width: 360px; display: grid; gap: 18px; padding: 24px 20px 20px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
+  .prozor p { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.4; text-wrap: balance; }
+  .prozor .dugmad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .prozor .dugmad:has(.hidden) { grid-template-columns: 1fr; }
+  .prozor .glavno { font-size: 1.05rem; padding: 14px; }
+  .prozor .tiho { padding: 14px; font-size: 1.05rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+
+  <p class="znak"><span class="znak-karte" aria-hidden="true"><i></i><i></i></span>Generator pojmova</p>
+
+  <!-- 1. Glavni meni -->
+  <section id="ekran-timovi" class="app">
+    <div class="ploca">
+      <div class="naslov-ploce"><h2>Težina</h2></div>
+      <div class="tezina" role="group" aria-label="Težina">
+        <button type="button" data-tezina="lako"><b>Lako</b><span class="tackice" aria-hidden="true"><span class="puna"></span><span></span><span></span></span></button>
+        <button type="button" data-tezina="srednje"><b>Srednje</b><span class="tackice" aria-hidden="true"><span class="puna"></span><span class="puna"></span><span></span></span></button>
+        <button type="button" data-tezina="tesko"><b>Teško</b><span class="tackice" aria-hidden="true"><span class="puna"></span><span class="puna"></span><span class="puna"></span></span></button>
+      </div>
+      <p id="tezina-opis" class="tezina-opis"></p>
+    </div>
+
+    <div class="ploca">
+      <div class="naslov-ploce"><h2>Timovi</h2><p class="oznaka">Bodovi</p></div>
+      <div id="lista-timova"></div>
+      <div class="red-dugmadi">
+        <button id="dodaj-tim" class="tiho" type="button">+ Dodaj tim</button>
+        <button id="resetuj-bodove" class="tiho" type="button">Svi bodovi na 0</button>
+      </div>
+    </div>
+
+    <button id="pocni-igru" class="glavno" type="button">Počni / nastavi igru</button>
+
+    <div class="podnozje">
+      <p id="info-reci" class="info-reci"></p>
+      <button id="obrisi-istoriju" class="link" type="button">Obriši istoriju reči</button>
+    </div>
+  </section>
+
+  <!-- 2. Igra -->
+  <section id="ekran-igra" class="app hidden">
+    <div class="potez">
+      <div class="potez-tim">
+        <p class="oznaka">Na potezu</p>
+        <p class="na-potezu"><span class="boja" aria-hidden="true"></span><span id="na-potezu"></span></p>
+      </div>
+      <p id="oznaka-tezine" class="cip"></p>
+    </div>
+
+    <div class="sto" id="sto">
+      <div class="prsten" id="prsten">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="staza" cx="60" cy="60" r="52"></circle>
+          <circle class="vreme" id="prsten-vreme" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="0"></circle>
+        </svg>
+        <p id="tajmer" class="tajmer" aria-label="Preostalo sekundi">60</p>
+      </div>
+
+      <div id="pre-runde" class="sto" style="width:100%">
+        <button id="kreni" class="glavno" type="button">KRENI</button>
+        <div class="red-dugmadi">
+          <button id="prethodni-tim" class="tiho" type="button">← Prethodni tim</button>
+          <button id="preskoci-tim" class="tiho" type="button">Sledeći tim →</button>
+        </div>
+      </div>
+
+      <div id="u-rundi" class="sto hidden" style="width:100%">
+        <div class="karta-omot">
+          <div class="karta">
+            <span class="indeks gore" aria-hidden="true"></span>
+            <p id="pojam" class="pojam" aria-live="polite"></p>
+            <span class="indeks dole" aria-hidden="true"></span>
+          </div>
+        </div>
+        <p class="runda-bodovi">U ovoj rundi: <strong id="runda-bodovi">0</strong></p>
+        <div class="akcije">
+          <button id="pogodjeno" class="btn-pogodak" type="button">POGOĐENO<small>+1 BOD</small></button>
+          <button id="generisi" class="btn-preskok" type="button">GENERIŠI<small>PRESKOČI · 0</small></button>
+        </div>
+        <div class="red-dugmadi">
+          <button id="ispocetka" class="tiho" type="button">↺ Ispočetka</button>
+          <button id="prekini" class="tiho" type="button">✕ Prekini rundu</button>
+        </div>
+      </div>
+
+      <div id="kraj-runde" class="sto hidden" style="width:100%">
+        <div class="karta-omot">
+          <div class="karta">
+            <div class="kraj-sadrzaj">
+              <p class="kraj-naslov">Vreme!</p>
+              <p id="kraj-tekst" class="kraj-tekst"></p>
+            </div>
+          </div>
+        </div>
+        <button id="sledeci" class="glavno" type="button">Sledeći tim</button>
+        <div class="red-dugmadi">
+          <button id="ponisti-rundu" class="tiho" type="button">↺ Poništi rundu i igraj ponovo</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ploca rezultat">
+      <div class="naslov-ploce"><h2>Rezultat</h2></div>
+      <ol id="tabela"></ol>
+    </div>
+    <div class="podnozje">
+      <button id="nova-igra" class="link" type="button">Glavni meni (timovi, bodovi i težina)</button>
+    </div>
+  </section>
+
+</main>
+
+<div id="potvrda" class="pozadina hidden" role="dialog" aria-modal="true" aria-labelledby="potvrda-tekst">
+  <div class="prozor">
+    <p id="potvrda-tekst"></p>
+    <div class="dugmad">
+      <button id="potvrda-ne" class="tiho ne" type="button">Ne</button>
+      <button id="potvrda-da" class="glavno" type="button">Da</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TRAJANJE = 60; // sekundi po potezu
+
+  const LAKO = ["Sunce", "Mesec", "Zvezda", "Planeta", "Kometa", "Galaksija", "Planina", "Reka", "More", "Okean", "Jezero", "Bara", "Potok", "Vodopad", "Pećina", "Ostrvo", "Pustinja", "Šuma", "Livada", "Brdo", "Dolina", "Kanjon", "Vulkan", "Lednik", "Plaža", "Obala", "Talas", "Oblak", "Duga", "Munja", "Grom", "Grmljavina", "Sneg", "Led", "Grad", "Magla", "Rosa", "Vetar", "Oluja", "Tornado", "Zemljotres", "Poplava", "Suša", "Inje", "Pahulja", "Pomračenje", "Jabuka", "Kruška", "Šljiva", "Trešnja", "Višnja", "Breskva", "Kajsija", "Grožđe", "Jagoda", "Malina", "Kupina", "Borovnica", "Lubenica", "Dinja", "Banana", "Pomorandža", "Limun", "Mandarina", "Ananas", "Kivi", "Smokva", "Nar", "Orah", "Lešnik", "Badem", "Kesten", "Kokos", "Avokado", "Krompir", "Paradajz", "Krastavac", "Paprika", "Luk", "Šargarepa", "Kupus", "Karfiol", "Brokoli", "Spanać", "Tikvica", "Bundeva", "Kukuruz", "Grašak", "Pasulj", "Boranija", "Rotkvica", "Cvekla", "Pečurka", "Celer", "Peršun", "Hleb", "Pogača", "Kifla", "Burek", "Pita", "Gibanica", "Sarma", "Musaka", "Ćevapi", "Pljeskavica", "Gulaš", "Paprikaš", "Supa", "Kajmak", "Ajvar", "Proja", "Kačamak", "Palačinka", "Krofna", "Baklava", "Tulumba", "Vanilice", "Torta", "Sladoled", "Čokolada", "Bombona", "Žvaka", "Kokice", "Pica", "Hamburger", "Hot-dog", "Špagete", "Lazanje", "Suši", "Sendvič", "Omlet", "Kobasica", "Slanina", "Sir", "Jogurt", "Mleko", "Med", "Džem", "Puter", "Kečap", "Senf", "Majonez", "Biber", "So", "Šećer", "Brašno", "Pirinač", "Kafa", "Čaj", "Limunada", "Sok", "Rakija", "Vino", "Pivo", "Boza", "Kompot", "Mačka", "Pas", "Konj", "Krava", "Svinja", "Ovca", "Koza", "Magarac", "Zec", "Kokoška", "Petao", "Ćurka", "Guska", "Patka", "Golub", "Vrabac", "Lasta", "Roda", "Orao", "Soko", "Sova", "Gavran", "Papagaj", "Paun", "Noj", "Pingvin", "Flamingo", "Slon", "Žirafa", "Zebra", "Lav", "Tigar", "Leopard", "Medved", "Vuk", "Lisica", "Jelen", "Srna", "Jež", "Veverica", "Miš", "Pacov", "Hrčak", "Krtica", "Majmun", "Gorila", "Kengur", "Koala", "Panda", "Nosorog", "Kamila", "Krokodil", "Zmija", "Gušter", "Kornjača", "Žaba", "Ajkula", "Kit", "Delfin", "Hobotnica", "Rak", "Jastog", "Meduza", "Šaran", "Som", "Pastrmka", "Leptir", "Pčela", "Osa", "Mrav", "Bubamara", "Komarac", "Muva", "Pauk", "Puž", "Glista", "Skakavac", "Cvrčak", "Svitac", "Dinosaurus", "Jednorog", "Zmaj", "Bicikl", "Motor", "Automobil", "Autobus", "Kamion", "Traktor", "Kombi", "Taksi", "Voz", "Tramvaj", "Trolejbus", "Metro", "Avion", "Helikopter", "Raketa", "Brod", "Čamac", "Jedrilica", "Podmornica", "Splav", "Kajak", "Balon", "Padobran", "Skuter", "Rolšue", "Skejtbord", "Saonice", "Kočija", "Bager", "Dizalica", "Kolica", "Gitara", "Violina", "Kontrabas", "Čelo", "Bubanj", "Klavir", "Harmonika", "Truba", "Trombon", "Flauta", "Frula", "Klarinet", "Saksofon", "Gusle", "Tamburica", "Ksilofon", "Činele", "Triangl", "Orgulje", "Harfa", "Mikrofon", "Zvučnik", "Slušalice", "Fudbal", "Košarka", "Odbojka", "Rukomet", "Vaterpolo", "Tenis", "Badminton", "Golf", "Boks", "Džudo", "Karate", "Rvanje", "Mačevanje", "Streljaštvo", "Streličarstvo", "Plivanje", "Ronjenje", "Veslanje", "Surfovanje", "Skijanje", "Klizanje", "Hokej", "Biciklizam", "Maraton", "Gimnastika", "Joga", "Šah", "Pikado", "Bilijar", "Kuglanje", "Planinarenje", "Alpinizam", "Ribolov", "Lov", "Jahanje", "Ples", "Žmurke", "Školice", "Lopta", "Golman", "Sudija", "Penal", "Ofsajd", "Trofej", "Medalja", "Olimpijada", "Lekar", "Zubar", "Apotekar", "Učitelj", "Profesor", "Vaspitačica", "Kuvar", "Konobar", "Pekar", "Mesar", "Frizer", "Krojač", "Obućar", "Stolar", "Električar", "Vodoinstalater", "Zidar", "Moler", "Arhitekta", "Inženjer", "Programer", "Pilot", "Stjuardesa", "Mornar", "Kapetan", "Vozač", "Poštar", "Policajac", "Vatrogasac", "Vojnik", "Advokat", "Novinar", "Fotograf", "Slikar", "Vajar", "Glumac", "Pevač", "Muzičar", "Režiser", "Pisac", "Pesnik", "Naučnik", "Astronaut", "Detektiv", "Farmer", "Pastir", "Ribar", "Rudar", "Kovač", "Mađioničar", "Klovn", "Kelner", "Prodavac", "Bankar", "Računovođa", "Sekretarica", "Bibliotekar", "Čistač", "Baštovan", "Veterinar", "Trener", "Kišobran", "Naočare", "Sat", "Ključ", "Brava", "Lampa", "Sveća", "Ogledalo", "Kompas", "Telefon", "Računar", "Tastatura", "Televizor", "Daljinski", "Radio", "Fotoaparat", "Kamera", "Knjiga", "Sveska", "Olovka", "Gumica", "Lenjir", "Makaze", "Lepak", "Bojice", "Ranac", "Novčanik", "Torba", "Kofer", "Češalj", "Sapun", "Peškir", "Fen", "Brijač", "Parfem", "Ruž", "Prsten", "Ogrlica", "Narukvica", "Minđuše", "Kruna", "Šešir", "Kapa", "Šal", "Rukavice", "Jakna", "Kaput", "Džemper", "Košulja", "Majica", "Pantalone", "Farmerke", "Suknja", "Haljina", "Odelo", "Kravata", "Pidžama", "Čarape", "Patike", "Čizme", "Papuče", "Sandale", "Kaiš", "Dugme", "Rajsfešlus", "Igla", "Konac", "Pegla", "Usisivač", "Veš-mašina", "Frižider", "Šporet", "Rerna", "Mikrotalasna", "Tiganj", "Šerpa", "Lonac", "Kašika", "Viljuška", "Nož", "Tanjir", "Šolja", "Čaša", "Flaša", "Tegla", "Kofa", "Metla", "Lopata", "Grablje", "Motika", "Čekić", "Ekser", "Šrafciger", "Kliješta", "Testera", "Merdevine", "Konopac", "Lanac", "Katanac", "Kutija", "Koverta", "Marka", "Razglednica", "Kalendar", "Mapa", "Globus", "Lupa", "Mikroskop", "Teleskop", "Dvogled", "Termometar", "Vaga", "Baterija", "Punjač", "Utičnica", "Sijalica", "Ventilator", "Klima", "Radijator", "Kamin", "Krevet", "Jastuk", "Ćebe", "Dušek", "Ormar", "Fioka", "Sto", "Stolica", "Fotelja", "Kauč", "Tepih", "Zavesa", "Prozor", "Vrata", "Zvono", "Krov", "Dimnjak", "Stepenice", "Lift", "Balkon", "Podrum", "Tavan", "Garaža", "Ograda", "Kapija", "Bunar", "Česma", "Kada", "Tuš", "Lavabo", "Ljuljaška", "Tobogan", "Klackalica", "Lutka", "Meda", "Kocka", "Slagalica", "Domine", "Karte", "Zviždaljka", "Lizalica", "Poklon", "Mašna", "Vatromet", "Konfete", "Maska", "Kostim", "Prijateljstvo", "Ljubav", "Mržnja", "Sloboda", "Hrabrost", "Strah", "Sreća", "Tuga", "Bes", "Ljubomora", "Zavist", "Ponos", "Stid", "Mašta", "Strpljenje", "Radoznalost", "Tišina", "Buka", "Nada", "Sumnja", "Poverenje", "Laž", "Istina", "Pravda", "Mir", "Rat", "Pobeda", "Poraz", "Uspeh", "Neuspeh", "Sećanje", "Zaborav", "San", "Košmar", "Lenjost", "Umor", "Glad", "Žeđ", "Dosada", "Iznenađenje", "Smeh", "Plač", "Poljubac", "Zagrljaj", "Osmeh", "Namig", "Kijanje", "Štucanje", "Zevanje", "Hrkanje", "Zamak", "Dvorac", "Tvrđava", "Kula", "Svetionik", "Most", "Tunel", "Brana", "Piramida", "Hram", "Crkva", "Manastir", "Džamija", "Biblioteka", "Pijaca", "Prodavnica", "Supermarket", "Apoteka", "Bolnica", "Škola", "Vrtić", "Fakultet", "Pošta", "Banka", "Bioskop", "Pozorište", "Muzej", "Galerija", "Cirkus", "Stadion", "Bazen", "Teretana", "Restoran", "Kafana", "Pekara", "Poslastičarnica", "Hotel", "Kamp", "Aerodrom", "Luka", "Parking", "Semafor", "Raskrsnica", "Autoput", "Selo", "Prestonica", "Fabrika", "Farma", "Vinograd", "Voćnjak", "Bašta", "Groblje", "Zatvor", "Sud", "Skupština", "Ambasada", "Zima", "Proleće", "Leto", "Jesen", "Ponedeljak", "Vikend", "Ponoć", "Podne", "Zora", "Sumrak", "Rođendan", "Venčanje", "Slava", "Božić", "Uskrs", "Doček", "Žurka", "Ekskurzija", "Odmor", "Raspust", "Ispit", "Matura", "Diploma", "Penzija", "Godišnjica", "Sahrana", "Krštenje", "Svadba", "Prosidba", "Ruža", "Lala", "Ljubičica", "Suncokret", "Maslačak", "Kaktus", "Bor", "Jela", "Hrast", "Bukva", "Breza", "Vrba", "Lipa", "Topola", "Palma", "Bambus", "Mahovina", "Paprat", "Detelina", "Trava", "Seno", "Slama", "Šišarka", "Žir", "Koren", "List", "Grana", "Stablo", "Pupoljak", "Glava", "Kosa", "Oko", "Uvo", "Nos", "Usta", "Zub", "Jezik", "Brada", "Brkovi", "Vrat", "Rame", "Ruka", "Lakat", "Šaka", "Prst", "Nokat", "Stomak", "Leđa", "Koleno", "Noga", "Stopalo", "Peta", "Srce", "Pluća", "Mozak", "Kost", "Skelet", "Krv", "Mišić", "Vampir", "Veštica", "Vila", "Patuljak", "Div", "Duh", "Zombi", "Robot", "Vanzemaljac", "Gusar", "Vitez", "Kralj", "Kraljica", "Princeza", "Princ", "Car", "Čarobnjak", "Superheroj", "Nindža", "Kauboj", "Indijanac", "Mumija", "Sirena", "Kiklop", "Kentaur", "Feniks", "Anđeo", "Đavo", "Internet", "Lozinka", "Imejl", "Poruka", "Selfi", "Lajk", "Aplikacija", "Dron", "Satelit", "Bitkoin", "Štampač", "Skener", "Vaj-faj", "Blutut", "Emoji", "Hešteg", "Influenser", "Podkast", "Matematika", "Fizika", "Hemija", "Biologija", "Geografija", "Istorija", "Muzičko", "Likovno", "Fizičko", "Gramatika", "Razlomak", "Trougao", "Krug", "Kvadrat", "Magnet", "Struja", "Atom", "Molekul", "Evolucija", "Fotosinteza", "Ekvator", "Kontinent", "Pariz", "London", "Rim", "Njujork", "Tokio", "Moskva", "Beograd", "Niš", "Kragujevac", "Subotica", "Zlatibor", "Kopaonik", "Tara", "Đerdap", "Dunav", "Sava", "Morava", "Drina", "Egipat", "Kina", "Indija", "Australija", "Afrika", "Amerika", "Evropa", "Antarktik", "Sahara", "Amazon", "Himalaji", "Alpi", "Koloseum", "Kalemegdan", "Kamen", "Pesak", "Blato", "Prašina", "Dim", "Vatra", "Pepeo", "Ugalj", "Zlato", "Srebro", "Gvožđe", "Bakar", "Dijamant", "Biser", "Kristal", "Staklo", "Drvo", "Papir", "Karton", "Plastika", "Guma", "Svila", "Vuna", "Pamuk", "Koža", "Mermer", "Cement", "Cigla", "Crep", "Asfalt", "Roštilj", "Piknik", "Kampovanje", "Selidba", "Kupovina", "Grudvanje", "Tuširanje", "Šminkanje", "Brijanje", "Šišanje", "Kolo", "Karaoke", "Kviz", "Lutrija", "Tombola", "Aukcija", "Demonstracije", "Izbori", "Štrajk", "Zakašnjenje", "Glavobolja", "Prehlada", "Vakcina", "Injekcija", "Flaster", "Gips", "Štake"];
+
+  const SREDNJE = ["Demokratija", "Diktatura", "Monarhija", "Republika", "Ustav", "Parlament", "Referendum", "Inflacija", "Recesija", "Porez", "Budžet", "Berza", "Kredit", "Kamata", "Hipoteka", "Bankrot", "Monopol", "Konkurencija", "Reklama", "Propaganda", "Cenzura", "Diplomatija", "Ambasador", "Sankcije", "Embargo", "Izbeglica", "Imigrant", "Pasoš", "Viza", "Carina", "Krijumčar", "Špijun", "Atentat", "Revolucija", "Pobuna", "Ustanak", "Okupacija", "Primirje", "Kapitulacija", "Savez", "Imperija", "Kolonija", "Feudalizam", "Kmet", "Plemstvo", "Aristokratija", "Tiranin", "Anarhija", "Birokratija", "Korupcija", "Mito", "Prevara", "Iznuda", "Ucena", "Alibi", "Svedok", "Porota", "Presuda", "Žalba", "Amnestija", "Pomilovanje", "Kaucija", "Testament", "Nasledstvo", "Miraz", "Gravitacija", "Atmosfera", "Ozon", "Hromozom", "Gen", "Mutacija", "Bakterija", "Virus", "Imunitet", "Antibiotik", "Alergija", "Dijagnoza", "Hirurgija", "Anestezija", "Rendgen", "Ultrazvuk", "Karantin", "Epidemija", "Pandemija", "Metabolizam", "Hormon", "Adrenalin", "Refleks", "Instinkt", "Hipnoza", "Halucinacija", "Amnezija", "Nesanica", "Fobija", "Klaustrofobija", "Nostalgija", "Empatija", "Ironija", "Sarkazam", "Metafora", "Paradoks", "Dilema", "Hipoteza", "Teorija", "Eksperiment", "Statistika", "Verovatnoća", "Procenat", "Algoritam", "Šifra", "Hijeroglif", "Alfabet", "Ćirilica", "Latinica", "Dijalekt", "Akcenat", "Sinonim", "Antonim", "Rima", "Sonet", "Roman", "Basna", "Legenda", "Mit", "Ep", "Tragedija", "Komedija", "Satira", "Parodija", "Karikatura", "Portret", "Pejzaž", "Skulptura", "Mozaik", "Freska", "Ikona", "Grafit", "Origami", "Kaligrafija", "Perspektiva", "Silueta", "Kontrast", "Simetrija", "Spirala", "Elipsa", "Prizma", "Cilindar", "Hipotenuza", "Dijagonala", "Paralelogram", "Arhipelag", "Poluostrvo", "Moreuz", "Zaliv", "Delta", "Ušće", "Izvor", "Meandar", "Gejzir", "Lava", "Krater", "Tundra", "Tajga", "Savana", "Prerija", "Džungla", "Močvara", "Oaza", "Dina", "Laguna", "Greben", "Fjord", "Lavina", "Odron", "Erozija", "Cunami", "Uragan", "Monsun", "Ravnodnevica", "Horizont", "Meridijan", "Paralela", "Asteroid", "Meteor", "Orbita", "Sazvežđe", "Supernova", "Zodijak", "Horoskop", "Luster", "Paravan", "Komoda", "Vitrina", "Gobelen", "Metronom", "Kaleidoskop", "Periskop", "Stetoskop", "Barometar", "Sekstant", "Peščanik", "Abakus", "Gramofon", "Kaseta", "Disketa", "Telegraf", "Faks", "Pejdžer", "Videorekorder", "Šestar", "Uglomer", "Nakovanj", "Tocilo", "Vreteno", "Razboj", "Kolovrat", "Đeram", "Vodenica", "Vetrenjača", "Ambar", "Koš", "Salaš", "Čardak", "Čatrlja", "Arheolog", "Astronom", "Geolog", "Meteorolog", "Psiholog", "Psihijatar", "Hirurg", "Anesteziolog", "Farmaceut", "Notar", "Diplomata", "Prevodilac", "Lektor", "Urednik", "Dirigent", "Koreograf", "Kaskader", "Somelijer", "Barmen", "Kustos", "Restaurator", "Juvelir", "Časovničar", "Grnčar", "Bačvar", "Potkivač", "Dimničar", "Lovočuvar", "Šumar", "Pčelar", "Vinogradar", "Ratar", "Skelar", "Kočijaš", "Abadžija", "Ćurčija", "Kazandžija", "Sujeverje", "Predrasuda", "Savest", "Moral", "Etika", "Čast", "Dostojanstvo", "Taština", "Pohlepa", "Škrtost", "Velikodušnost", "Skromnost", "Iskrenost", "Odanost", "Izdaja", "Osveta", "Oproštaj", "Kajanje", "Zahvalnost", "Razočaranje", "Inspiracija", "Intuicija", "Mudrost", "Genijalnost", "Talenat", "Ambicija", "Upornost", "Disciplina", "Odgovornost", "Kompromis", "Pregovori", "Rivalstvo", "Solidarnost", "Tolerancija", "Diskriminacija", "Ravnopravnost", "Privatnost", "Anonimnost", "Popularnost", "Bogatstvo", "Siromaštvo", "Luksuz", "Minimalizam", "Perfekcionizam", "Optimizam", "Pesimizam", "Egoizam", "Altruizam", "Melanholija", "Euforija", "Panika", "Trema", "Sramota", "Inat", "Merak", "Dert", "Sevdah", "Čežnja", "Gordost", "Pakost", "Šafran", "Cimet", "Karanfilić", "Vanila", "Kurkuma", "Origano", "Bosiljak", "Ruzmarin", "Pršuta", "Kulen", "Čvarci", "Ćušpajz", "Đuveč", "Podvarak", "Pihtije", "Turšija", "Slatko", "Tufahija", "Ratluk", "Alva", "Kadaif", "Štrudla", "Knedle", "Rezanci", "Trahana", "Rizoto", "Tiramisu", "Bešamel", "Kroasan", "Baget", "Fondi", "Kiseljak", "Labirint", "Fatamorgana", "Eho", "Senka", "Odraz", "Iluzija", "Akrobacija", "Žongliranje", "Trapez", "Pantomima", "Marioneta", "Karneval", "Maskenbal", "Hodočašće", "Post", "Molitva", "Ispovest", "Kum", "Svekrva", "Snaja", "Zet", "Pašenog", "Jetrva", "Šurak", "Dever", "Zaova", "Praunuk", "Blizanci", "Usvojenje", "Starateljstvo", "Vršnjak", "Komšiluk", "Prela", "Sedeljka", "Moba", "Zadruga", "Zdravica", "Hibernacija", "Metamorfoza", "Kamuflaža", "Mimikrija", "Simbioza", "Parazit", "Predator", "Plen", "Krdo", "Jato", "Čopor", "Leglo", "Gnezdo", "Košnica", "Mravinjak", "Kokon", "Larva", "Fosil", "Mamut", "Kameleon", "Tarantula", "Škorpija", "Skarabej", "Bogomoljka", "Hijena", "Šakal", "Lemur", "Lenivac", "Mravojed", "Pelikan", "Albatros", "Kolibri", "Tukan"];
+
+  const TESKO = ["Efekat leptira", "Crna rupa", "Teorija relativiteta", "Veliki prasak", "Kvantna fizika", "Tamna materija", "Paralelni univerzum", "Prirodna selekcija", "Placebo efekat", "Deža vi", "Stokholmski sindrom", "Kognitivna disonanca", "Sindrom prevaranta", "Kriza srednjih godina", "Pirova pobeda", "Ahilova peta", "Trojanski konj", "Pandorina kutija", "Gordijev čvor", "Sizifov posao", "Damoklov mač", "Prokrustova postelja", "Tantalove muke", "Danajski dar", "Judin poljubac", "Solomonsko rešenje", "Kolumbovo jaje", "Arijadnina nit", "Odiseja", "Augijeve štale", "Herkulovski podvig", "Vavilonska kula", "Nojeva barka", "Sodoma i Gomora", "Izgubljeni sin", "Ponuda i potražnja", "Slobodno tržište", "Hladni rat", "Gvozdena zavesa", "Industrijska revolucija", "Renesansa", "Prosvetiteljstvo", "Srednji vek", "Kameno doba", "Ledeno doba", "Globalno zagrevanje", "Efekat staklene bašte", "Ozonska rupa", "Kisele kiše", "Održivi razvoj", "Obnovljiva energija", "Nuklearna fuzija", "Vreme poluraspada", "Apsolutna nula", "Brzina svetlosti", "Svetlosna godina", "Zvučni zid", "Doplerov efekat", "Perpetuum mobile", "Zlatni presek", "Fibonačijev niz", "Pitagorina teorema", "Beskonačnost", "Prost broj", "Kvadratni koren", "Teorija haosa", "Teorija igara", "Zatvorenikova dilema", "Okamova oštrica", "Kategorički imperativ", "Egzistencijalizam", "Nihilizam", "Utopija", "Distopija", "Stoicizam", "Hedonizam", "Karma", "Nirvana", "Reinkarnacija", "Jin i jang", "Slobodna volja", "Smisao života", "Kolektivno nesvesno", "Mašinsko učenje", "Blokčejn", "Kriptovaluta", "Lažne vesti", "Teorija zavere", "Digitalni otisak", "Sajber napad", "Internet stvari", "Kvantni računar", "Algoritam pretrage", "Otvoreni kod", "Grupno mišljenje", "Efekat posmatrača", "Samoispunjavajuće proročanstvo", "Žrtveno jagnje", "Crni labud", "Slon u sobi", "Bela laž", "Gola istina", "Medveđa usluga", "Krokodilske suze", "Labudova pesma", "Kamen spoticanja", "Jabuka razdora", "Zlatna sredina", "Sveti gral", "Druga strana medalje", "Kula od karata", "Mrtvo slovo", "Vruć krompir", "Kukavičje jaje", "Trn u oku", "Zub vremena", "Ćorava kutija", "Sizifov kamen", "Ruska ruleta", "Kineska tortura vodom", "Ljudska prava", "Podela vlasti", "Pravna država", "Opšte pravo glasa", "Građanska neposlušnost", "Nevidljiva ruka", "Berzanski krah", "Velika depresija", "Hiperinflacija", "Siva ekonomija", "Pranje novca", "Poreski raj", "Insajdersko trgovanje", "Ekonomija obima", "Bruto domaći proizvod", "Kontrolni paket", "Dečji rad", "Imuni sistem", "Antitela", "Dvostruka spirala", "Matične ćelije", "Kloniranje", "Genetski inženjering", "Transplantacija organa", "Klinička smrt", "Mesečarenje", "Paraliza sna", "Lucidno sanjanje", "Fantomski bol", "Sinestezija", "Disleksija", "Daltonizam", "Hipohondrija", "Mišićna memorija", "Biološki sat", "Onomatopeja", "Palindrom", "Anagram", "Oksimoron", "Hiperbola", "Eufemizam", "Aliteracija", "Personifikacija", "Pleonazam", "Tautologija", "Neologizam", "Arhaizam", "Lapsus", "Frojdovska omaška", "Retoričko pitanje", "Ironija sudbine", "Crni humor", "Tok svesti", "Četvrti zid", "Lirski subjekat", "Epski deseterac", "Slobodni stih", "Impresionizam", "Kubizam", "Nadrealizam", "Barok", "Gotika", "Pop art", "Avangarda", "Kič", "Remek-delo", "Autoportret", "Mrtva priroda", "Gudački kvartet", "Simfonijski orkestar", "Opereta", "Kontrapunkt", "Improvizacija", "Apsolutni sluh", "Lanac ishrane", "Ekosistem", "Biodiverzitet", "Parazitizam", "Migracija ptica", "Polarna svetlost", "Pomračenje Meseca", "Plima i oseka", "Tektonske ploče", "Golfska struja", "Bermudski trougao", "Vatreni prsten", "Kontinentalni drift", "Crvena planeta", "Seoba naroda", "Krstaški ratovi", "Crna smrt", "Inkvizicija", "Lov na veštice", "Berlinski zid", "Sletanje na Mesec", "Svemirska trka", "Trka u naoružanju", "Atomska bomba", "Kosovski boj", "Pad Carigrada", "Velika seoba", "Sudnji dan", "Smak sveta", "Kraj istorije", "Prazan hod", "Kvadratura kruga", "Začarani krug", "Kokoška ili jaje", "Dvostruki agent", "Lažna uzbuna", "Tihi saučesnik", "Hod po žici", "Igra senki", "Domino efekat", "Efekat bumeranga", "Zakon privlačnosti", "Zakon inercije", "Arhimedov zakon", "Njutnova jabuka", "Šredingerova mačka", "Murfijev zakon", "Paretovo pravilo", "Petrov princip"];
+
+  const RECI = { lako: LAKO, srednje: SREDNJE, tesko: TESKO };
+  const MAKS_RECI = { lako: 1, srednje: 1, tesko: 3 }; // najviše reči u jednom pojmu
+  const NAZIV_TEZINE = { lako: "Lako", srednje: "Srednje", tesko: "Teško" };
+
+  const PODRAZUMEVANI_TIMOVI = [
+    "Tim 1", "Tim 2", "Tim 3", "Tim 4"
+  ];
+
+  const $ = (id) => document.getElementById(id);
+
+  // Potvrda unutar stranice. Ugrađeni prozorčići pregledača (confirm, alert) su u nekim okruženjima
+  // blokirani (odmah vraćaju „Otkaži“), pa dugmad nisu ništa radila.
+  function pitaj(tekst, { da = "Da", ne = "Ne" } = {}) {
+    return new Promise((resolve) => {
+      $("potvrda-tekst").textContent = tekst;
+      $("potvrda-da").textContent = da;
+      $("potvrda-ne").textContent = ne;
+      $("potvrda-ne").classList.toggle("hidden", ne === null);
+      $("potvrda").classList.remove("hidden");
+      $("potvrda-da").focus();
+      const kraj = (odgovor) => {
+        $("potvrda").classList.add("hidden");
+        $("potvrda-da").onclick = $("potvrda-ne").onclick = $("potvrda").onclick = null;
+        resolve(odgovor);
+      };
+      $("potvrda-da").onclick = () => kraj(true);
+      $("potvrda-ne").onclick = () => kraj(false);
+      $("potvrda").onclick = (e) => { if (e.target === $("potvrda")) kraj(false); };
+    });
+  }
+  const obavesti = (tekst) => pitaj(tekst, { da: "U redu", ne: null });
+
+  // ---------- Stanje ----------
+  let timovi = [];      // [{ ime, bodovi }]
+  let naPotezu = 0;
+  let iskorisceno = new Set(); // sve reči koje su ikada izašle (mala slova)
+  let nove = { lako: [], srednje: [], tesko: [] }; // dodatne reči (nisu u upotrebi u samostalnoj verziji)
+  let tezina = "lako";
+  let preostalo = TRAJANJE;
+  let interval = null;
+  let rundaBodovi = 0;
+
+  function sacuvaj() {
+    try { localStorage.setItem("igra-pojmova", JSON.stringify({ timovi, naPotezu, tezina })); } catch (e) {}
+  }
+  function ucitaj() {
+    try { return JSON.parse(localStorage.getItem("igra-pojmova")); } catch (e) { return null; }
+  }
+
+  // ---------- Unos timova ----------
+  function dodajRedTima(ime = "", bodovi = 0) {
+    const red = document.createElement("div");
+    red.className = "tim-red";
+    const boja = document.createElement("span");
+    boja.className = "boja";
+    boja.setAttribute("aria-hidden", "true");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Ime tima";
+    input.value = ime;
+    input.className = "ime";
+    const poeni = document.createElement("input");
+    poeni.type = "number";
+    poeni.inputMode = "numeric";
+    poeni.step = "1";
+    poeni.min = "0";
+    poeni.className = "poeni";
+    poeni.value = bodovi;
+    poeni.setAttribute("aria-label", "Bodovi");
+    const stepper = document.createElement("div");
+    stepper.className = "stepper";
+    const minus = document.createElement("button");
+    minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", "Oduzmi bod");
+    const plus = document.createElement("button");
+    plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", "Dodaj bod");
+    const pomeri = (d) => { poeni.value = Math.max(0, (Math.round(Number(poeni.value)) || 0) + d); };
+    minus.addEventListener("click", () => pomeri(-1));
+    plus.addEventListener("click", () => pomeri(1));
+    stepper.append(minus, poeni, plus);
+    const obrisi = document.createElement("button");
+    obrisi.type = "button";
+    obrisi.className = "ikona";
+    obrisi.textContent = "×";
+    obrisi.setAttribute("aria-label", "Obriši tim");
+    obrisi.addEventListener("click", () => red.remove());
+    red.append(boja, input, stepper, obrisi);
+    $("lista-timova").append(red);
+    return input;
+  }
+
+  function prikaziUnos() {
+    zaustaviTajmer();
+    $("lista-timova").innerHTML = "";
+    const lista = timovi.length ? timovi : PODRAZUMEVANI_TIMOVI.map(ime => ({ ime, bodovi: 0 }));
+    lista.forEach(t => dodajRedTima(t.ime, t.bodovi));
+    $("ekran-igra").classList.add("hidden");
+    $("ekran-timovi").classList.remove("hidden");
+    prikaziInfo();
+  }
+
+  $("dodaj-tim").addEventListener("click", () => dodajRedTima().focus());
+
+  $("resetuj-bodove").addEventListener("click", async () => {
+    if (!await pitaj("Vratiti bodove svih timova na 0 i krenuti od prvog tima?")) return;
+    $("lista-timova").querySelectorAll(".poeni").forEach(i => { i.value = 0; });
+    naPotezu = 0;
+  });
+
+  $("pocni-igru").addEventListener("click", () => {
+    const novi = [...$("lista-timova").querySelectorAll(".tim-red")]
+      .map(red => ({
+        ime: red.querySelector(".ime").value.trim(),
+        bodovi: Math.max(0, Math.round(Number(red.querySelector(".poeni").value) || 0)),
+      }))
+      .filter(t => t.ime);
+    if (novi.length < 1) { obavesti("Upiši bar jedan tim."); return; }
+    timovi = novi;
+    naPotezu = Math.min(naPotezu, timovi.length - 1);
+    sacuvaj();
+    pripremiPotez();
+    $("ekran-timovi").classList.add("hidden");
+    $("ekran-igra").classList.remove("hidden");
+  });
+
+  // ---------- Igra ----------
+  // ---------- Reči: nikad se ne ponavljaju ----------
+  const kljuc = (r) => r.trim().toLocaleLowerCase("sr");
+
+  function ucitajIstoriju() {
+    try {
+      const sac = JSON.parse(localStorage.getItem("igra-reci") || "{}");
+      (sac.iskorisceno || []).forEach(r => iskorisceno.add(r));
+      nove = normalizujNove(sac.nove);
+    } catch (e) {}
+  }
+  // Stariji format je imao jedan niz (tada je postojala samo laka težina)
+  function normalizujNove(n) {
+    const out = { lako: [], srednje: [], tesko: [] };
+    if (Array.isArray(n)) out.lako = n.filter(r => typeof r === "string");
+    else if (n && typeof n === "object") {
+      for (const t of Object.keys(out)) if (Array.isArray(n[t])) out[t] = n[t].filter(r => typeof r === "string");
+    }
+    return out;
+  }
+
+  function sacuvajIstorijuLokalno() {
+    try {
+      localStorage.setItem("igra-reci", JSON.stringify({ iskorisceno: [...iskorisceno], nove }));
+    } catch (e) {}
+  }
+
+  function preostaleReci(t = tezina) {
+    const vidjeno = new Set();
+    return RECI[t].concat(nove[t]).filter(r => {
+      const k = kljuc(r);
+      if (r.trim().split(/\s+/).length > MAKS_RECI[t]) return false;
+      if (iskorisceno.has(k) || vidjeno.has(k)) return false;
+      vidjeno.add(k);
+      return true;
+    });
+  }
+
+  function prikaziInfo() {
+    const n = preostaleReci().length;
+    $("info-reci").textContent =
+      `Iskorišćeno reči: ${iskorisceno.size}. Spremno novih (${NAZIV_TEZINE[tezina].toLowerCase()}): ${n}.` +
+      "";
+  }
+
+  // Samostalna verzija: radi kao običan sajt, bez naloga i bez interneta posle učitavanja.
+  // Istorija reči i timovi pamte se u pregledaču igrača.
+  const dopunaUToku = false;
+  function zakaziUpis() {}
+  function dopuniAkoTreba() {}
+
+  function sledeciPojam() {
+    const p = $("pojam");
+    const ostalo = preostaleReci();
+    if (!ostalo.length) {
+      p.textContent = dopunaUToku ? "Stižu nove reči…" : "Nema više novih reči.";
+      p.classList.add("poruka");
+      dopuniAkoTreba();
+      return;
+    }
+    const rec = ostalo[Math.floor(Math.random() * ostalo.length)];
+    iskorisceno.add(kljuc(rec));
+    nove[tezina] = nove[tezina].filter(r => kljuc(r) !== kljuc(rec));
+    sacuvajIstorijuLokalno();
+    zakaziUpis();
+    p.textContent = rec;
+    p.classList.remove("anim", "poruka");
+    void p.offsetWidth; // restart animacije
+    p.classList.add("anim");
+    dopuniAkoTreba();
+  }
+
+  const OPIS_TEZINE = {
+    lako: "Svakodnevni pojmovi, poznati i deci, uvek jedna reč.",
+    srednje: "Teži i ređi pojmovi, uvek jedna reč.",
+    tesko: "Najteži pojmovi: apstraktno, stručno, izreke. Do 3 reči.",
+  };
+  function prikaziTezinu() {
+    document.querySelectorAll(".tezina button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.tezina === tezina)));
+    $("tezina-opis").textContent = OPIS_TEZINE[tezina];
+    $("oznaka-tezine").textContent = NAZIV_TEZINE[tezina];
+    document.querySelectorAll(".indeks").forEach(e => { e.textContent = NAZIV_TEZINE[tezina].toUpperCase(); });
+    prikaziInfo();
+  }
+  document.querySelectorAll(".tezina button").forEach(b => b.addEventListener("click", () => {
+    tezina = b.dataset.tezina;
+    sacuvaj();
+    prikaziTezinu();
+    dopuniAkoTreba();
+  }));
+
+  $("obrisi-istoriju").addEventListener("click", async () => {
+    if (!await pitaj("Obrisati istoriju? Sve reči će ponovo moći da izađu.")) return;
+    iskorisceno = new Set();
+    sacuvajIstorijuLokalno();
+    zakaziUpis();
+    prikaziInfo();
+  });
+
+  const OBIM_PRSTENA = 2 * Math.PI * 52;
+  let krajRunde = 0;
+  function prikaziTajmer() {
+    $("tajmer").textContent = preostalo;
+    const malo = interval !== null && preostalo <= 10;
+    $("tajmer").classList.toggle("malo", malo);
+    $("prsten").classList.toggle("malo", preostalo <= 10);
+    const deo = interval ? Math.max(0, (krajRunde - Date.now()) / (TRAJANJE * 1000)) : preostalo / TRAJANJE;
+    $("prsten-vreme").style.strokeDashoffset = String(OBIM_PRSTENA * (1 - deo));
+    $("prsten-vreme").style.opacity = deo > 0.004 ? "1" : "0";
+  }
+
+  function prikaziTabelu() {
+    const ol = $("tabela");
+    ol.innerHTML = "";
+    const najvise = Math.max(0, ...timovi.map(t => t.bodovi));
+    const vodeci = timovi.filter(t => t.bodovi === najvise).length === 1 && najvise > 0;
+    timovi.forEach((t, i) => {
+      const li = document.createElement("li");
+      li.className = "rez" + (i === naPotezu ? " aktivan" : "");
+      const boja = document.createElement("span");
+      boja.className = "boja";
+      const ime = document.createElement("span");
+      ime.className = "rez-ime";
+      ime.textContent = t.ime;
+      if (vodeci && t.bodovi === najvise) {
+        const em = document.createElement("em"); em.className = "vodi"; em.textContent = "vodi"; ime.append(em);
+      }
+      if (i === naPotezu) {
+        const em = document.createElement("em"); em.textContent = "na potezu"; ime.append(em);
+      }
+      const bod = document.createElement("span");
+      bod.className = "bod";
+      bod.textContent = t.bodovi;
+      const traka = document.createElement("div");
+      traka.className = "traka";
+      const puni = document.createElement("span");
+      puni.style.width = (najvise > 0 ? Math.max(0, t.bodovi) / najvise * 100 : 0) + "%";
+      traka.append(puni);
+      li.append(boja, ime, bod, traka);
+      ol.append(li);
+    });
+  }
+
+  function pripremiPotez() {
+    zaustaviTajmer();
+    preostalo = TRAJANJE;
+    rundaBodovi = 0;
+    $("na-potezu").textContent = timovi[naPotezu].ime;
+    $("ekran-igra").style.setProperty("--tim", `var(--t${naPotezu % 6 + 1})`);
+    $("sto").classList.remove("u-rundi");
+    prikaziTajmer();
+    $("pre-runde").classList.remove("hidden");
+    $("u-rundi").classList.add("hidden");
+    $("kraj-runde").classList.add("hidden");
+    prikaziTabelu();
+  }
+
+  function zaustaviTajmer() {
+    if (interval) { clearInterval(interval); interval = null; }
+  }
+
+  $("kreni").addEventListener("click", () => pocniRundu());
+
+  function pocniRundu() {
+    zvuk(); // otključava zvuk na telefonu, da bi se čuo i kraj vremena
+    zaustaviTajmer();
+    rundaBodovi = 0;
+    preostalo = TRAJANJE;
+    prikaziTajmer();
+    prikaziTabelu();
+    $("kraj-runde").classList.add("hidden");
+    $("pre-runde").classList.add("hidden");
+    $("u-rundi").classList.remove("hidden");
+    $("runda-bodovi").textContent = 0;
+    sledeciPojam();
+    const kraj = Date.now() + TRAJANJE * 1000;
+    krajRunde = kraj;
+    $("sto").classList.add("u-rundi");
+    interval = setInterval(() => {
+      preostalo = Math.max(0, Math.ceil((kraj - Date.now()) / 1000));
+      prikaziTajmer();
+      if (preostalo === 0) zavrsiRundu();
+    }, 200);
+  }
+
+  // Poništava bodove osvojene/izgubljene u tekućoj (ili upravo završenoj) rundi
+  function ponistiBodoveRunde() {
+    zaustaviTajmer();
+    timovi[naPotezu].bodovi -= rundaBodovi;
+    rundaBodovi = 0;
+    sacuvaj();
+  }
+
+  $("ispocetka").addEventListener("click", async () => {
+    if (!await pitaj("Krenuti rundu ispočetka? Bodovi iz ove runde se poništavaju.")) return;
+    ponistiBodoveRunde();
+    pocniRundu();
+  });
+
+  $("prekini").addEventListener("click", async () => {
+    if (!await pitaj("Prekinuti rundu? Bodovi iz ove runde se poništavaju i tim ostaje na potezu.")) return;
+    ponistiBodoveRunde();
+    pripremiPotez();
+  });
+
+  $("ponisti-rundu").addEventListener("click", async () => {
+    if (!await pitaj("Poništiti bodove iz ove runde? Isti tim igra ponovo.")) return;
+    ponistiBodoveRunde();
+    pripremiPotez();
+  });
+
+  $("prethodni-tim").addEventListener("click", () => {
+    naPotezu = (naPotezu - 1 + timovi.length) % timovi.length;
+    sacuvaj();
+    pripremiPotez();
+  });
+
+  $("preskoci-tim").addEventListener("click", () => {
+    naPotezu = (naPotezu + 1) % timovi.length;
+    sacuvaj();
+    pripremiPotez();
+  });
+
+  // ---------- Zvukovi (sintetizovani, bez fajlova) ----------
+  let audio = null;
+  function zvuk() {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+      return audio;
+    } catch (e) { return null; }
+  }
+  function ton(ctx, { tip = "sine", od, do: doF = od, pocetak = 0, trajanje, jacina = 0.3 }) {
+    const t0 = ctx.currentTime + pocetak;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = tip;
+    osc.frequency.setValueAtTime(od, t0);
+    if (doF !== od) osc.frequency.exponentialRampToValueAtTime(doF, t0 + trajanje);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(jacina, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + trajanje);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + trajanje + 0.05);
+  }
+  // Veseo „ding-ding“ naviše
+  function zvukPogodjeno() {
+    const ctx = zvuk(); if (!ctx) return;
+    ton(ctx, { od: 784, trajanje: 0.15, jacina: 0.25 });                // G5
+    ton(ctx, { od: 1047, pocetak: 0.09, trajanje: 0.3, jacina: 0.25 }); // C6
+    ton(ctx, { tip: "triangle", od: 1568, pocetak: 0.09, trajanje: 0.25, jacina: 0.08 });
+  }
+  // Gadan, kreštav zujač koji pada nadole
+  function zvukPreskoceno() {
+    const ctx = zvuk(); if (!ctx) return;
+    ton(ctx, { tip: "sawtooth", od: 180, do: 70, trajanje: 0.55, jacina: 0.22 });
+    ton(ctx, { tip: "square", od: 190, do: 74, trajanje: 0.55, jacina: 0.12 });
+    ton(ctx, { tip: "sawtooth", od: 96, do: 40, pocetak: 0.05, trajanje: 0.5, jacina: 0.15 });
+  }
+
+  // Kraj vremena: tri kratka pištanja pa duga sirena
+  function zvukKraj() {
+    const ctx = zvuk(); if (!ctx) return;
+    [0, 0.2, 0.4].forEach(t => ton(ctx, { tip: "square", od: 880, pocetak: t, trajanje: 0.12, jacina: 0.15 }));
+    ton(ctx, { tip: "sawtooth", od: 440, pocetak: 0.65, trajanje: 1.0, jacina: 0.2 });
+    ton(ctx, { tip: "square", od: 554, pocetak: 0.65, trajanje: 1.0, jacina: 0.1 });
+  }
+
+  $("pogodjeno").addEventListener("click", () => {
+    if (!interval || $("pojam").classList.contains("poruka")) return;
+    zvukPogodjeno();
+    timovi[naPotezu].bodovi++;
+    rundaBodovi++;
+    $("runda-bodovi").textContent = rundaBodovi;
+    sacuvaj();
+    prikaziTabelu();
+    sledeciPojam();
+  });
+
+  $("generisi").addEventListener("click", () => {
+    if (!interval) return;
+    zvukPreskoceno();
+    // Preskakanje ne dodaje i ne oduzima bodove
+    sledeciPojam();
+  });
+
+  function zavrsiRundu() {
+    zaustaviTajmer();
+    zvukKraj();
+    if (navigator.vibrate) navigator.vibrate(400);
+    $("u-rundi").classList.add("hidden");
+    $("kraj-runde").classList.remove("hidden");
+    $("sto").classList.remove("u-rundi");
+    prikaziTajmer();
+    const t = timovi[naPotezu];
+    $("kraj-tekst").textContent =
+      `${t.ime}: ${rundaBodovi} ${recBod(rundaBodovi)} u ovoj rundi.`;
+  }
+
+  function recBod(n) {
+    n = Math.abs(n);
+    const d = n % 10, s = n % 100;
+    if (d === 1 && s !== 11) return "bod";
+    if (d >= 2 && d <= 4 && (s < 12 || s > 14)) return "boda";
+    return "bodova";
+  }
+
+  $("sledeci").addEventListener("click", () => {
+    naPotezu = (naPotezu + 1) % timovi.length;
+    sacuvaj();
+    pripremiPotez();
+  });
+
+  $("nova-igra").addEventListener("click", async () => {
+    if (interval) {
+      if (!await pitaj("Runda je u toku. Prekinuti je? Bodovi iz ove runde se poništavaju.")) return;
+      ponistiBodoveRunde();
+    }
+    prikaziUnos();
+  });
+
+  // ---------- Start ----------
+  ucitajIstoriju();
+  const sacuvano = ucitaj();
+  if (sacuvano && RECI[sacuvano.tezina]) tezina = sacuvano.tezina;
+  prikaziTezinu();
+  if (sacuvano && Array.isArray(sacuvano.timovi) && sacuvano.timovi.length) {
+    timovi = sacuvano.timovi;
+    naPotezu = Math.min(sacuvano.naPotezu || 0, timovi.length - 1);
+    pripremiPotez();
+    $("ekran-timovi").classList.add("hidden");
+    $("ekran-igra").classList.remove("hidden");
+  } else {
+    prikaziUnos();
+  }
+</script>
+</body>
+</html>
